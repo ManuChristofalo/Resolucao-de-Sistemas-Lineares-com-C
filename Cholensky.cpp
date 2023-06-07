@@ -44,60 +44,95 @@ void DResto(int i, int j, double M[][max], double L[][max]){
 	}
 }
 
-double somatoriaEQLY(int j, int i, double L[][10], double X[]){
-	double cont=0;
-	for(;j < i-1 ; j++){
-		cont += L[i+1][j] * X[j]; //Ã© i+1 para fixar a linha, pois na chamada de funÃ§Ã£o Ã© i-1
-	}
-	
-	return cont;
+double somatoriaEQLY(int j, int i, double L[][10], double X[]) {
+    double cont = 0;
+    for (; j <= i - 1; j++) {
+        cont += L[i][j] * X[j];
+    }
+
+    return cont;
 }
 
-void EQLY(int t, double L[][10], double Y[], double B[]){
-	int i, j;
-	for(i=0 ; i < t; i++){
-		if(i==0) 
-			Y[0] = B[0]/L[0][0];
-		else 
-			Y[i] = (B[i] - somatoriaEQLY(0, i-1, L, Y))/L[i][i];
-	}
+void EQLY(int t, double L[][10], double Y[], double B[]) {
+    int i, j;
+	printf("\nVetor Y:");
+    for (i = 0; i < t; i++) {
+        if (i == 0) {
+            Y[0] = B[0] / L[0][0];
+            printf("\nY[%d] = %.2lf", i, Y[0]);  
+        } else {
+            Y[i] = (B[i] - somatoriaEQLY(0, i - 1, L, Y)) / L[i][i];
+            printf("\nY[%d] = %.2lf", i, Y[i]);  
+        }
+    }
 }
 
-double somatoriaEQUX(int j, int i, double M[][10], double X[]){
-	double cont=0;
-	int aux;
-	aux= j-1;	//linha de i fixada  pois j é i+1 na chamda da função
-	for( ; j < i ; j++){
-		cont+=M[aux][j] * X[j]; 
-	}
-	return cont;
+double somatoriaEQUX(int j, int i, double M[][10], double X[]) {
+    double cont = 0;
+    int aux;
+    aux = j;
+    for (; j < i; j++) {
+        cont += M[aux][j] * X[j];
+    }
+    return cont;
 }
 
-void EQUX(double t, double L[][10], double X[], double B[]){
-	int i, j;
-	for(i=0 ; i<t ; i++){
-		if(i==0)
-			X[0]= B[0]/L[0][0];
-		else 
-			X[i]= (B[i] - somatoriaEQUX(i+1, t, L, X))/L[i][i];
-	}
+void EQUX(double t, double LT[][10], double X[], double Y[]) {
+    int i, j;
+    printf("\nVetor X:");
+    for (i = 0; i < t; i++) {
+        if (i == 0) {
+            X[0] = Y[0] / LT[0][0];
+            printf("\nX[%d] = %.2lf", i, X[0]);
+        } else {
+            X[i] = (Y[i] - somatoriaEQUX(0, i, LT, X)) / LT[i][i];
+            printf("\nX[%d] = %.2lf", i, X[i]);
+        }
+    }
 }
 
-int MCHO(int t, double M[][10], double X[], double B[]){		//matriz de gaus compacta
-	int i, j;	//operadores linha e coluna
-	double L[max][max];	//matriz U e L
-	
-	for(i=0; i<t ; i++){
-		for(j = 0; j < i; j++){
-			DResto(i, j, M, L);
-		}
-	DPrincipal(i, M, L);
-	}
-	//precisa resolver a matriz Ly = b
-	double Y[max];
-	//Ly = b
-	EQLY(t, L, Y, B);
-	EQUX(t, L, X, Y);
+void MCHO(int t, double M[][10], double X[], double B[]) {
+    int i, j;  // operadores linha e coluna
+    double L[max][max];  // matriz U e L
+    
+    for (i = 0; i < t; i++) {
+        for (j = 0; j < i; j++) {
+            DResto(i, j, M, L);
+        }
+        DPrincipal(i, M, L);
+    }
+    
+    // precisa resolver a matriz Ly = b
+    double Y[max];
+    
+    // Ly = b
+    EQLY(t, L, Y, B);
+    
+    printf("\n\nMatriz L\n\n");
+    for (i = 0; i < t; i++) {
+        for (j = 0; j < t; j++) {
+            printf("%.2lf ", L[i][j]);
+        }
+        printf("\n");
+    }
+    
+    // Transposição da matriz L
+    double LT[max][max];
+    for (i = 0; i < t; i++) {
+        for (j = 0; j < t; j++) {
+            LT[i][j] = L[j][i];
+        }
+    }
+    
+    printf("\n\nTransposta:\n");
+    for (i = 0; i < t; i++) {
+        for (j = 0; j < t; j++) {
+            printf("%.2lf ", LT[i][j]);
+        }
+        printf("\n");
+    }
+    
+    EQUX(t, LT, X, Y);
 }
 
 int main(){
