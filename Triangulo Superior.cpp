@@ -1,63 +1,64 @@
 #include <stdio.h>
 #define max 10
 
-int somatoria(int j, int i , int M[][10], int X[]){
-	int cont=0, aux;
-	aux= j-1;	//linha de i fixada  pois j é i+1 na chamda da função
-	for( ; j < i ; j++){
-		cont+=M[aux][j] * X[j]; 
+int somatoria (int j, int i , double M[][10], double X[]) {
+	int cont = 0; 
+	int aux = j-1;
+	//linha de i fixada  pois j Ã© i+1 na chamda da funÃ§Ã£o
+	
+	for ( j=0; j<i; j++) {
+		cont += M[aux][j] * X[j]; 
 	}
 	
 	return cont;
 }
 
-void TriSuperior(int t, int M[][10], int X[], int B[]){
-	int i, j, ii=1, jj;
-	for(i=0 ; i<t ; i++){
-			if(i==0) X[0]= B[0]/M  [0][0];
-			else X[i]= (B[i] - somatoria(i+1, t, M, X))/M[i][i];
-}
+void TriSuperior (int t, double M[][10], double X[], double B[]) {
+	int i, j; 
+	
+	for(i=t-1 ; i>=0 ; i--) {
+			if (i==t-1) X[i] = B[i] / M[i][i];
+			
+			else X[i]= (B[i] - somatoria(i+1, t, M, X)) / M[i][i];
+	}
 }
 
-int main(){
-	
-	int A[max][max], X[max], B[max];
+int main () {	
+	double A[max][max], X[max], B[max];
 	int i , n, j;
 	
 	printf("Digite a ordem da matriz: ");
 	scanf("%d", &n);
 	
-	printf("\nDigite a matriz\n");
-	for(i=0 ; i<n ; i++)
-	for(j=0 ; j<n ; j++)
-	scanf("%d", &A[i][j]);	
-	
-	printf("Digite o vetor X");
+	printf("\nDigite a matriz %d x %d:\n", n, n);
 	
 	for(i=0 ; i<n ; i++)
-	scanf("%d", &X[i]);
+		for(j=0 ; j<n ; j++)
+			scanf("%lf", &A[i][j]);	
 	
-	printf("Digite o vetor B");
 	
-	for(i=0 ; i<n ; i++)
-	scanf("%d", &B[i]);
-	
-	printf("\nA matriz eh:");
-	for(i=0 ; i<n ; i++){
-	printf("\n");
-	for(j=0 ; j<n ; j++)
-	printf("%d ", A[i][j]);
-}
-	
-	printf("\nO vetor B eh: ");
+	printf("Digite o vetor B\n");
 	
 	for(i=0 ; i<n ; i++)
-	printf("%d", B[i]);
+		scanf("%lf", &B[i]);
+	
+	printf("\n\nA matriz inserida foi:");
+
+	for (i=0 ; i<n ; i++) {
+		printf("\n");
+			for(j=0 ; j<n ; j++)
+				printf("%.4lf ", A[i][j]);
+	}
+	
+	printf("\n\nO vetor B inserido foi: ");
+	
+	for(i=0 ; i<n ; i++)
+		printf("%.4lf ", B[i]);
 	
 	TriSuperior(n, A, X, B);
 
-	printf("\nO vetor X eh: ");
+	printf("\n\nO vetor X sera: ");
 	
 	for(i=0 ; i<n ; i++)
-	printf("%d", X[i]);
+		printf("%.4lf ", X[i]);
 }
