@@ -1,9 +1,11 @@
 //Sistemas Lineares - Métodos Numéricos Computacionais
 /*Trabalho feito por:
-Manuele S. Christófalo - RA: 221029261
-BOTEM O NOME E O RA DE VCS AQUI!
+	Enzo Campanholo Paschoalini - RA: 221026215
+	Manuele S. Christófalo - RA: 221029261
+	Paulo Henrique de Camargo Dionysio Martins - RA: 221026169
+	Thiago Bigotte Gullo - RA: 221026241
 */
-//UNESP Bauru - 04/06/2023
+//UNESP Bauru - 11/06/2023
 
 #include <bits/stdc++.h>
 #include <windows.h>
@@ -22,8 +24,11 @@ using namespace std;
 #define CINZA 120
 #define VERDE 114
 #define AZUL 113
+#define CIANO 115
 #define VERMELHO 116
 
+int n;
+float M[10][10];
 
 //FORMATAÇÃO =========================================================================================================
 void gotoxy(int x, int y){ //Posição do cursor
@@ -80,11 +85,11 @@ void menuSelecao(int pos){ //Menu de Seleção
 	}
 }
 
-bool voltaMenu(){
+bool voltaMenu(){ //Opção tentar ou voltar
 	char saida='a'; cursor(false);
-	SetColor(BRANCO); cout << "\n\nPressione ";
-	SetColor(AZUL); cout<<"<ENTER>"; SetColor(BRANCO); cout << " para tentar com outros valores ou ";
-	SetColor(AZUL); cout<<"<ESC>"; SetColor(BRANCO); cout << " para voltar ao menu de opcoes.";
+	SetColor(CINZA); cout << endl << endl << endl << endl << "Pressione ";
+	SetColor(CIANO); cout << "<ENTER>"; SetColor(CINZA); cout << " para tentar com outros valores ou ";
+	SetColor(CIANO); cout << "<ESC>"; SetColor(CINZA); cout << " para voltar ao menu de opcoes.";
 	while(saida!=ENTER && saida!=ESC) saida=getch();
 
 	if(saida==ESC) return 1;
@@ -92,12 +97,53 @@ bool voltaMenu(){
 }
 
 //FUNÇÕES ===========================================================================================================
-void exemplo(){
-	/*Essa é só uma função de exemplo,
-	neste campo ficariam as funções usadas
-	nos cálculos - ex: Cholensky*/
+void insereMatriz(){ //Inserção da matriz para cada opção
+	n=11;
+	SetColor(BRANCO); cout << endl << endl << endl << "Digite a ordem da sua matriz (max. 10): ";
+	while(n>10 || n<1){
+		gotoxy(40, 3); cout << "          "; gotoxy(40, 3);
+		SetColor(AZUL); cin >> n;
+	}
+
+	SetColor(BRANCO); cout << endl << "Insira a sua matriz (" << n << "x" << n << "):" << endl; SetColor(AZUL);
+	for(int i=0; i<n; i++){
+		for(int j=0; j<n; j++){
+			cin >> M[i][j];
+		}
+	}
 }
 
+float Determinante(int ordem, float matriz[10][10]){
+	if(ordem==1) return matriz[0][0]; //Matriz de ordem 1
+	else{
+		float resp=0;
+		int jj, ii;
+
+		for(int i=0; i<ordem; i++){
+			if(matriz[0][i]!=0){ //Sempre escolhe a linha 0 para calcular
+				float matrizAux[10][10];
+				ii=jj=0;
+				
+				for(int linha=1; linha<ordem; linha++){ //Como escolheu a linha 0, compara com linha 1 da inicial
+					for(int col=0; col<ordem; col++){
+						if(col!=i){ //Exclusão da coluna 
+							matrizAux[ii][jj]=matriz[linha][col];
+							jj++;
+						}
+					}
+
+					ii++;	//Linha montada -> soma para a próxima coluna
+					jj=0;
+				}
+
+				float pivo=(i%2==0)? matriz[0][i] : -matriz[0][i];
+				resp=resp+pivo*Determinante(ordem-1, matrizAux);
+			}
+		}
+
+		return resp;
+	}
+}
 
 //MAIN ==============================================================================================================
 int main(){
@@ -136,11 +182,14 @@ int main(){
 		//PARTE 2: SELEÇÃO FEITA
 		while(pos==1){ //2.1 - Calcular determinante
 			limpaTela(); cursor(true);
-			SetColor(BRANCO); cout << "Opcao selecionada: ";
-			SetColor(AZUL); cout << "Calcular o determinante"; SetColor(BRANCO);
+			SetColor(CINZA); cout << "-> ";
+			SetColor(CINZA); cout << "Opcao selecionada: ";
+			SetColor(VERDE); cout << "Calcular o determinante"; SetColor(BRANCO);
 
-			cout << endl << endl << "Teste: ";
-			cin >> teste;
+			insereMatriz();
+			SetColor(VERDE); cout << endl << endl << endl << "-> ";
+			SetColor(BRANCO); cout << "O determinante eh: ";
+			SetColor(VERDE); cout << "det(M)=" << Determinante(n, M);
 
 			if(voltaMenu()==1){
 				selecao='a';
