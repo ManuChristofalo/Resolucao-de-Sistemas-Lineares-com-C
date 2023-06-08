@@ -1,86 +1,82 @@
 #include <stdio.h>
-#define max 10
-//sqrt raiz quadrada;
+#define MAX 10
 
-int somatorio(int k , int M[][max], int X[]){
-	int cont=0, j, n;
-	for(j=0 ; k<n ; k++){
-		if(j!=k)
-		cont+=M[k][j]*X[k];
-	}
-	return cont;
+void jacobi(int ordem, double matriz[][MAX], double vetorB[], double aproximacao[], double e, int maxIter, double solucao[], int* numIter) {
+    double x[MAX], temp[MAX];
+    int i, j, iter;
+
+    for (iter = 1; iter <= maxIter; iter++) {
+        double erro = 0.0;
+
+        for (i = 0; i < ordem; i++) {
+            temp[i] = vetorB[i];
+            for (j = 0; j < ordem; j++) {
+                if (i != j) {
+                    temp[i] -= matriz[i][j] * aproximacao[j];
+                }
+            }
+            temp[i] /= matriz[i][i];
+        }
+
+        for (i = 0; i < ordem; i++) {
+            erro += (temp[i] - aproximacao[i]) * (temp[i] - aproximacao[i]);
+        }
+
+        for (i = 0; i < ordem; i++) {
+            aproximacao[i] = temp[i];
+        }
+
+        if (erro < e) {
+            break;
+        }
+    }
+
+    for (i = 0; i < ordem; i++) {
+        solucao[i] = aproximacao[i];
+    }
+
+    *numIter = iter;
 }
 
-int calculae(int X[], int Xi[], int n){
-	int maxx, A[max] , maxA;
-	float e;
-	maxx = X[0];
-	for(int i=0 ; i<n ; i++){
-		A[i] = X[i] - Xi[i];
-		
-		if(X[i]>maxx)maxx = X[i];
-	
-		if(i==0)maxA = A[i];
-		else if(A[i] > maxA) maxA = A[i];
-	}
-	e = maxA / maxx;
-	return e;
-}
+int main() {
+    int ordem, maxIter, numIter;
+    double matriz[MAX][MAX], vetorB[MAX], aproximacao[MAX], solucao[MAX], e;
 
+    printf("Digite a ordem do sistema: ");
+    scanf("%d", &ordem);
 
-int calculaX(int n, int B[], int M[][max], int X[]){
-	int Xi[max], e, k;
-	for(k=0 ;  k<n ; k++){
-		Xi[k]=X[k];
-		X[k] = (B[k] - somatorio(k, M, X))/M[k][k];
-	}
-	e = calculae(X, Xi, n);
-	
-	return e;
-}
+    printf("Digite a matriz dos coeficientes:\n");
+    for (int i = 0; i < ordem; i++) {
+        for (int j = 0; j < ordem; j++) {
+            scanf("%lf", &matriz[i][j]);
+        }
+    }
 
-void JACOBI(int t, int M[][10], int B[] , float erro, int maxint, int X[], int n){		//matriz de gaus compacta
-	int i, j, e;	//operadores linha e coluna
-	int L[max][max];	//matriz U e L
-	n=0;
-	for(i=0 ; i<maxint; i++, n++ ){
-		//calcula raizes
-		e = calculaX(t, B, M, X);
-		
-		//verifica ou continua
-		if(e < erro)return;
-		
-}
-		
-}
+    printf("Digite o vetor dos termos independentes:\n");
+    for (int i = 0; i < ordem; i++) {
+        scanf("%lf", &vetorB[i]);
+    }
 
-int main(){
-	
-	int A[max][max], X[max], B[max];
-	int i , n, j;
-	int maxint, Bapro, e, inte;
-	
-	printf("Digite a ordem da matriz: ");
-	scanf("%d", &n);
-	
-	printf("\nDigite a matriz dos coeficientes\n");
-	for(i=0 ; i<n ; i++)
-	for(j=0 ; j<n ; j++)
-	scanf("%d", &A[i][j]);	
-	
-	printf("Digite o vetor B dos termos independentes");
-	
-	for(i=0 ; i<n ; i++)
-	scanf("%d", &B[i]);
-	
-	printf("Digite o Maximo de interações");
-	scanf("%d", &maxint);
+    printf("Digite a aproximacao inicial para a solucao:\n");
+    for (int i = 0; i < ordem; i++) {
+        scanf("%lf", &aproximacao[i]);
+    }
 
-	
-	JACOBI(n, A, B, Bapro, e, maxint, X, inte);
+    printf("Digite o valor de e (posicao desejada):\n");
+    scanf("%lf", &e);
 
-	printf("\nO vetor X eh: ");
-	
-	for(i=0 ; i<n ; i++)
-	printf("%d", X[i]);
+    printf("Digite o numero maximo de iteracoes: ");
+    scanf("%d", &maxIter);
+
+    jacobi(ordem, matriz, vetorB, aproximacao, e, maxIter, solucao, &numIter);
+
+    printf("O vetor solucao sera:\n");
+    for (int i = 0; i < ordem; i++) {
+        printf("%.4lf ", solucao[i]);
+    }
+    printf("\n");
+
+    printf("Número de iterações realizadas: %d\n", numIter);
+
+    return 0;
 }
