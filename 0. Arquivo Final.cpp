@@ -27,12 +27,12 @@ using namespace std;
 #define CIANO 115
 #define VERMELHO 116
 
-#define MAX 10;
+#define MAX 10
 
 int n;
-double M[10][10], B[10], X[10];
+double M[MAX][MAX], B[MAX], X[MAX];
 
-//FORMATAÇÃO =========================================================================================================
+//FORMATAÇÃO ==========================================================================================================
 void gotoxy(int x, int y){ //Posição do cursor
 	COORD pos={x, y};
 	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), pos);
@@ -101,10 +101,10 @@ bool voltaMenu(){ //Opção tentar ou voltar
 }
 
 
-//FUNÇÕES BASE =======================================================================================================
+//FUNÇÕES BASE ========================================================================================================
 void insereMatriz(){ //Inserção da matriz para cada opção
-	n=11;
-	SetColor(BRANCO); cout << endl << endl << endl << "Digite a ordem da sua matriz (max. 10): ";
+	n=11; 
+	SetColor(BRANCO); cout << endl << endl << endl << "Digite a ordem da sua matriz (max. " << MAX << "): ";
 	while(n>10 || n<1){
 		gotoxy(40, 3); cout << "          "; gotoxy(40, 3);
 		SetColor(AZUL); cin >> n;
@@ -118,10 +118,10 @@ void insereMatriz(){ //Inserção da matriz para cada opção
 	}
 }
 
-double Determinante(int n, double matriz[][10]){ //Calcula determinante
+double Determinante(int n, double matriz[][MAX]){ //Calcula determinante
 	if(n==1) return matriz[0][0]; //Matriz de n 1
 	else{
-		float resp=0;
+		double resp=0;
 		int jj, ii;
 
 		for(int i=0; i<n; i++){
@@ -158,9 +158,20 @@ bool simetrica(){
 	return true;
 }
 
+void printaX(){
+	SetColor(VERDE); cout << endl << endl << "Vetor X (solucao):" << endl; SetColor(VERDE);
+	cout << "X=(";
+	for(int i=0; i<n; i++){
+		if(X[i]>=0.001 || X[i]<=-0.001) cout << fixed << setprecision(3) << X[i];
+		else cout << 0;
 
-//TRIANGULO INFERIOR E SUPERIOR =================================================================================================
-void TriInferior(int n, double M[][10], double B[], double X[]){
+		if(i!=n-1) cout << "  ";
+	}
+	cout << ")";
+}
+
+//TRIANGULO INFERIOR E SUPERIOR =======================================================================================
+void TriInferior(int n, double M[][MAX], double B[], double X[]){
 	for(int i=0 ; i<n ; i++){
 			if(i==0) X[0]=B[0]/M[0][0];
 			else{
@@ -171,7 +182,7 @@ void TriInferior(int n, double M[][10], double B[], double X[]){
 	}
 }
 
-void TriSuperior(int n, double M[][10], double B[], double X[]){
+void TriSuperior(int n, double M[][MAX], double B[], double X[]){
 	for(int i=n-1; i>=0; i--){
 		if(i==n-1) X[i]=B[i]/M[i][i];
 		else{
@@ -182,28 +193,114 @@ void TriSuperior(int n, double M[][10], double B[], double X[]){
 	}
 }
 
-//CHOLENSKY =========================================================================================================
-double somatorioPrincipal(int i, double L[][10]){
+
+//DECOMPOSIÇÃO LU =====================================================================================================	
+double somatorioU(int i, int j, double M[][MAX], double L[][MAX], double U[][MAX]) {
+    double cont = 0;
+    int k;
+    for (k = 0; k < i; k++) {
+        cont += L[i][k] * U[k][j];
+    }
+
+    return cont;
+}
+
+void MU(int i, int n, double M[][MAX], double L[][MAX], double U[][MAX]) {
+    int j;
+    for (j = 0; j < n; j++) {
+        if (i == 0) {
+            U[i][j] = M[i][j];
+			printf("\nMatriz U[%d][%d] = %.2lf\n", i, j, U[i][j]);
+        } else {
+            U[i][j] = M[i][j] - somatorioU(i, j, M, L, U);
+			printf("\nMatriz U[%d][%d] = %.2lf\n", i, j, U[i][j]);
+        }
+    }
+}
+
+double somatorioL(int i, int j, double M[][MAX], double L[][MAX], double U[][MAX]) {
+    double cont = 0;
+    int k;
+    for (k = 0; k < j; k++) {
+        cont += L[i][k] * U[k][j];
+    }
+
+    return cont;
+}
+
+void ML(int j, int n, double M[][MAX], double L[][MAX], double U[][MAX]) {
+    int i;
+    for (i = 0; i < n; i++) {
+        if (j == 0) {
+            L[i][j] = M[i][j] / U[j][j];
+			printf("\nMatriz L[%d][%d] = %.2lf\n", i, j, L[i][j]);
+        } else {
+            L[i][j] = (M[i][j] - somatorioL(i, j, M, L, U)) / U[j][j];
+			printf("\nMatriz L[%d][%d] = %.2lf\n", i, j, L[i][j]);
+        }
+    }
+}
+
+void resolverSistema(int n, double L[][MAX], double U[][MAX], double B[], double X[]) {
+    int i, j, k;
+    double Y[MAX];
+
+    //Ly = B
+    Y[0] = B[0] / L[0][0];
+    for (i = 1; i < n; i++) {
+        double soma = 0;
+        for (j = 0; j < i; j++) {
+            soma += L[i][j] * Y[j];
+        }
+        Y[i] = (B[i] - soma) / L[i][i];
+    }
+
+    //Ux = y
+    X[n - 1] = Y[n - 1] / U[n - 1][n - 1];
+    for (i = n - 2; i >= 0; i--) {
+        double soma = 0;
+        for (j = i + 1; j < n; j++) {
+            soma += U[i][j] * X[j];
+        }
+        X[i] = (Y[i] - soma) / U[i][i];
+    }
+}
+
+void MLU(int n, double M[][MAX], double B[], double X[]){
+    int i, j;
+    double U[MAX][MAX], L[MAX][MAX];
+
+    for (i = 0; i < n; i++) {
+        MU(i, n, M, L, U);
+        ML(i, n, M, L, U);
+    }
+
+    resolverSistema(n, L, U, B, X);
+}
+
+
+//CHOLENSKY ===========================================================================================================
+double somatorioPrincipal(int i, double L[][MAX]){
     double soma=0;
     for(int k=0; k<i; k++) soma+=pow(L[i][k], 2);
 
     return soma;
 }
 
-void DiagPrincipal(int i, double matriz[][10], double L[][10]){
+void DiagPrincipal(int i, double matriz[][MAX], double L[][MAX]){
     if(i==0) L[0][0]=sqrt(matriz[0][0]);
 	
 	else L[i][i]=sqrt(matriz[i][i] - somatorioPrincipal(i, L));
 }
 
-double somatorioPadrao(int i, int j, double L[][10]){
+double somatorioPadrao(int i, int j, double L[][MAX]){
     double soma=0;
     for(int k=0; k<j; k++) soma+=L[i][k]*L[j][k];
     
     return soma;
 }
 
-void OutrosElem(int i, int j, double matriz[][10], double L[][10]){
+void OutrosElem(int i, int j, double matriz[][MAX], double L[][MAX]){
     if(i==0){
         L[i][j]=matriz[i][j] / L[i][i];
         L[j][i]=L[i][j];
@@ -212,7 +309,7 @@ void OutrosElem(int i, int j, double matriz[][10], double L[][10]){
 	else L[i][j]=(matriz[i][j] - somatorioPadrao(i, j, L)) / L[j][j];
 }
 
-void EquacaoLY(int n, double L[][10], double Y[], double B[]){
+void EquacaoLY(int n, double L[][MAX], double Y[], double B[]){
 	SetColor(CINZA); cout << endl << "Vetor Y:" << endl; SetColor(BRANCO);
 
     for(int i=0; i<n; i++){
@@ -225,7 +322,7 @@ void EquacaoLY(int n, double L[][10], double Y[], double B[]){
     }
 }
 
-void EquacaoXY(double n, double Lt[][10], double X[], double Y[]){
+void EquacaoXY(double n, double Lt[][MAX], double X[], double Y[]){
     for(int i=n-1; i>=0; i--){
         double soma=Y[i];
         for(int j=n-1; j>i; j--) soma-=Lt[i][j]*X[j];
@@ -234,7 +331,7 @@ void EquacaoXY(double n, double Lt[][10], double X[], double Y[]){
     }
 }
 
-void Cholesky(int n, double matriz[][10], double B[], double X[]){
+void Cholesky(int n, double matriz[][MAX], double B[], double X[]){
     double L[10][10];
 
     for(int i=0; i<n; i++){
@@ -272,7 +369,7 @@ void Cholesky(int n, double matriz[][10], double B[], double X[]){
 }
 
 
-//MAIN ==============================================================================================================
+//MAIN ================================================================================================================
 int main(){
     system("color 70");
 	HWND console=GetConsoleWindow();
@@ -333,7 +430,7 @@ int main(){
 			SetColor(VERDE); cout << "Resolver sistema triangular inferior"; SetColor(BRANCO);
 
 			n=11;
-			SetColor(BRANCO); cout << endl << endl << endl << "Digite a ordem da sua matriz (max. 10): ";
+			SetColor(BRANCO); cout << endl << endl << endl << "Digite a ordem da sua matriz (max. " << MAX << "): ";;
 			while(n>10 || n<1){
 				gotoxy(40, 3); cout << "          "; gotoxy(40, 3);
 				SetColor(AZUL); cin >> n;
@@ -351,16 +448,7 @@ int main(){
 
 			TriInferior(n, M, B, X);
 
-			SetColor(VERDE); cout << endl << endl << "Vetor X (solucao):" << endl; SetColor(VERDE);
-			cout << "X=(";
-			for(int i=0; i<n; i++){
-				if(X[i]>=0.001 || X[i]<=-0.001) cout << fixed << setprecision(3) << X[i];
-				else cout << 0;
-
-				if(i!=n-1) cout << "  ";
-			}
-			cout << ")";
-
+			printaX();
 
 			if(voltaMenu()==1){
 				selecao='a';
@@ -375,7 +463,7 @@ int main(){
 			SetColor(VERDE); cout << "Resolver sistema triangular superior"; SetColor(BRANCO);
 
 			n=11;
-			SetColor(BRANCO); cout << endl << endl << endl << "Digite a ordem da sua matriz (max. 10): ";
+			SetColor(BRANCO); cout << endl << endl << endl << "Digite a ordem da sua matriz (max. " << MAX << "): ";
 			while(n>10 || n<1){
 				gotoxy(40, 3); cout << "          "; gotoxy(40, 3);
 				SetColor(AZUL); cin >> n;
@@ -393,15 +481,7 @@ int main(){
 
 			TriSuperior(n, M, B, X);
 
-			SetColor(VERDE); cout << endl << endl << "Vetor X (solucao):" << endl; SetColor(VERDE);
-			cout << "X=(";
-			for(int i=0; i<n; i++){
-				if(X[i]>=0.001 || X[i]<=-0.001) cout << fixed << setprecision(3) << X[i];
-				else cout << 0;
-
-				if(i!=n-1) cout << "  ";
-			}
-			cout << ")";
+			printaX();
 
 			if(voltaMenu()==1){
 				selecao='a';
@@ -414,6 +494,25 @@ int main(){
 			SetColor(CINZA); cout << "-> ";
 			SetColor(CINZA); cout << "Opcao selecionada: ";
 			SetColor(VERDE); cout << "Resolver por Decomposicao LU"; SetColor(BRANCO);
+
+			insereMatriz(); //Inserção da matriz
+
+			int flag=0; //Teste de convergência
+			for(int ordem=1; ordem<=n; ordem++) if(Determinante(ordem, M)<=0){flag=ordem; break;}
+
+			if(flag!=0){
+				SetColor(VERMELHO); cout << endl << endl << "A matriz inserida nao converge -> ";
+				SetColor(BRANCO); cout << "o determinante para A(" << flag << ") eh igual a zero.";
+			}
+
+			else{ //Converge :)
+				SetColor(BRANCO); cout << endl << "Insira o vetor B: " << endl; SetColor(AZUL);
+				for(int i=0; i<n; i++) cin >> B[i];
+
+				SetColor(CINZA); cout << endl; for(int loop=0; loop<80; loop++) cout << "=";
+				Cholesky(n, M, B, X);
+				printaX();
+			}
 
 			if(voltaMenu()==1){
 				selecao='a';
@@ -431,7 +530,7 @@ int main(){
 
 			int flag=1; //Teste de convergência
 			if(simetrica()==false) flag=-1;
-			for(int n=1; n<=n; n++) if(Determinante(n, M)<=0) flag=0;
+			for(int ordem=1; ordem<=n; ordem++) if(Determinante(ordem, M)<=0) flag=0;
 
 			if(flag<1){
 				SetColor(VERMELHO); cout << endl << endl << "A matriz inserida nao converge -> ";
@@ -446,15 +545,7 @@ int main(){
 
 				SetColor(CINZA); cout << endl; for(int loop=0; loop<80; loop++) cout << "=";
 				Cholesky(n, M, B, X);
-				SetColor(VERDE); cout << endl << endl << "Vetor X (solucao):" << endl; SetColor(VERDE);
-				cout << "X=(";
-				for(int i=0; i<n; i++){
-					if(X[i]>=0.001 || X[i]<=-0.001) cout << fixed << setprecision(3) << X[i];
-					else cout << 0;
-
-					if(i!=n-1) cout << "  ";
-				}
-				cout << ")";
+				printaX();
 			}
 
 
