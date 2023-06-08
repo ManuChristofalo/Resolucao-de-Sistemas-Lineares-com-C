@@ -27,8 +27,10 @@ using namespace std;
 #define CIANO 115
 #define VERMELHO 116
 
+#define MAX 10;
+
 int n;
-float M[10][10];
+double M[10][10], B[10], X[10];
 
 //FORMATAÇÃO =========================================================================================================
 void gotoxy(int x, int y){ //Posição do cursor
@@ -37,10 +39,10 @@ void gotoxy(int x, int y){ //Posição do cursor
 }
 
 void cursor(bool val){ //Esconde o cursor
-   HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+   HANDLE consoleHandle=GetStdHandle(STD_OUTPUT_HANDLE);
    CONSOLE_CURSOR_INFO info;
-   info.dwSize = 10;
-   info.bVisible = val;
+   info.dwSize=10;
+   info.bVisible=val;
    SetConsoleCursorInfo(consoleHandle, &info);
 }
 
@@ -62,7 +64,7 @@ void menuSelecao(int pos){ //Menu de Seleção
 	cout << "  Resolver sistema triangular inferior" << endl;
 	cout << "  Resolver sistema triangular superior" << endl;
 	cout << "  Resolver por Decomposicao LU" << endl;
-    cout << "  Resolver por Cholesky" << endl;
+	cout << "  Resolver por Cholesky" << endl;
 	cout << "  Resolver por Gauss Compacto" << endl;
 	cout << "  Resolver por Gauss-Jordan" << endl;
 	cout << "  Resolver por Jacobi" << endl;
@@ -74,7 +76,7 @@ void menuSelecao(int pos){ //Menu de Seleção
 		case 1: gotoxy(2, 4); SetColor(CINZA); cout << "  Calcular o determinante" << endl; break;
 		case 2: gotoxy(2, 5); SetColor(CINZA); cout << "  Resolver sistema triangular inferior" << endl; break;
 		case 3: gotoxy(2, 6); SetColor(CINZA); cout << "  Resolver sistema triangular superior" << endl; break;
-		case 4: gotoxy(2, 7); SetColor(CINZA); cout << "  Resolver por Decomposiçao LU" << endl; break;
+		case 4: gotoxy(2, 7); SetColor(CINZA); cout << "  Resolver por Decomposicao LU" << endl; break;
 		case 5: gotoxy(2, 8); SetColor(CINZA); cout << "  Resolver por Cholesky" << endl; break;
 		case 6: gotoxy(2, 9); SetColor(CINZA); cout << "  Resolver por Gauss Compacto" << endl; break;
 		case 7: gotoxy(2, 10); SetColor(CINZA); cout << "  Resolver por Gauss-Jordan" << endl; break;
@@ -96,7 +98,8 @@ bool voltaMenu(){ //Opção tentar ou voltar
 	return 0;
 }
 
-//FUNÇÕES ===========================================================================================================
+
+//FUNÇÕES BASE ===========================================================================================================
 void insereMatriz(){ //Inserção da matriz para cada opção
 	n=11;
 	SetColor(BRANCO); cout << endl << endl << endl << "Digite a ordem da sua matriz (max. 10): ";
@@ -113,7 +116,7 @@ void insereMatriz(){ //Inserção da matriz para cada opção
 	}
 }
 
-float Determinante(int ordem, float matriz[10][10]){
+double Determinante(int ordem, double matriz[][10]){ //Calcula determinante
 	if(ordem==1) return matriz[0][0]; //Matriz de ordem 1
 	else{
 		float resp=0;
@@ -121,7 +124,7 @@ float Determinante(int ordem, float matriz[10][10]){
 
 		for(int i=0; i<ordem; i++){
 			if(matriz[0][i]!=0){ //Sempre escolhe a linha 0 para calcular
-				float matrizAux[10][10];
+				double matrizAux[10][10];
 				ii=jj=0;
 				
 				for(int linha=1; linha<ordem; linha++){ //Como escolheu a linha 0, compara com linha 1 da inicial
@@ -136,7 +139,7 @@ float Determinante(int ordem, float matriz[10][10]){
 					jj=0;
 				}
 
-				float pivo=(i%2==0)? matriz[0][i] : -matriz[0][i];
+				double pivo=(i%2==0)? matriz[0][i] : -matriz[0][i];
 				resp=resp+pivo*Determinante(ordem-1, matrizAux);
 			}
 		}
@@ -144,6 +147,104 @@ float Determinante(int ordem, float matriz[10][10]){
 		return resp;
 	}
 }
+
+bool simetrica(){
+	for(int i=0; i<n; i++){
+		for(int j=0; j<n; j++) if(M[i][j]!=M[j][i]) return false;
+	}
+
+	return true;
+}
+
+//CHOLENSKY =========================================================================================================
+double somatorioPrincipal(int i, double L[][10]){
+    double soma=0;
+    for(int k=0; k<i; k++) soma+=pow(L[i][k], 2);
+
+    return soma;
+}
+
+void DiagPrincipal(int i, double matriz[][10], double L[][10]){
+    if(i==0) L[0][0]=sqrt(matriz[0][0]);
+	
+	else L[i][i]=sqrt(matriz[i][i] - somatorioPrincipal(i, L));
+}
+
+double somatorioPadrao(int i, int j, double L[][10]){
+    double soma=0;
+    for(int k=0; k<j; k++) soma+=L[i][k]*L[j][k];
+    
+    return soma;
+}
+
+void OutrosElem(int i, int j, double matriz[][10], double L[][10]){
+    if(i==0){
+        L[i][j]=matriz[i][j] / L[i][i];
+        L[j][i]=L[i][j];
+    }
+	
+	else L[i][j]=(matriz[i][j] - somatorioPadrao(i, j, L)) / L[j][j];
+}
+
+void EquacaoLY(int ordem, double L[][10], double Y[], double B[]){
+	SetColor(CINZA); cout << endl << "Vetor Y:" << endl; SetColor(BRANCO);
+
+    for(int i=0; i<ordem; i++){
+        double soma=B[i];
+
+        for(int j=0; j<i; j++) soma-=L[i][j]*Y[j];
+
+        Y[i]=soma/L[i][i];
+		cout << fixed << setprecision(3) << Y[i] << "  ";
+    }
+}
+
+void EquacaoXY(double ordem, double Lt[][10], double X[], double Y[]){
+    for(int i=ordem-1; i>=0; i--){
+        double soma=Y[i];
+        for(int j=ordem-1; j>i; j--) soma-=Lt[i][j]*X[j];
+
+        X[i]=soma/Lt[i][i];
+    }
+}
+
+void Cholesky(int ordem, double matriz[][10], double B[], double X[]){
+    double L[10][10];
+
+    for(int i=0; i<ordem; i++){
+        for(int j=0; j<i; j++) OutrosElem(i, j, matriz, L);
+        DiagPrincipal(i, matriz, L);
+    }
+
+
+    double Y[10];
+    EquacaoLY(ordem, L, Y, B);
+
+	SetColor(CINZA); cout << endl << endl << endl << "Matriz L:" << endl; SetColor(BRANCO);
+    for(int i=0; i<ordem; i++){
+        for(int j=0; j<ordem; j++) cout << fixed << setprecision(3) << L[i][j] << "  ";
+
+        cout << endl;
+    }
+
+
+    double Lt[10][10];
+    for (int i=0; i<ordem; i++) {
+        for (int j=0; j<ordem; j++) {
+            Lt[i][j]=L[j][i];
+        }
+    }
+
+	SetColor(CINZA); cout << endl << endl << "L Transposta:" << endl; SetColor(BRANCO);
+    for(int i=0; i<ordem; i++){
+        for(int j=0; j<ordem; j++) cout << fixed << setprecision(3) << Lt[i][j] << "  ";
+
+        cout << endl;
+    }
+
+    EquacaoXY(ordem, Lt, X, Y);
+}
+
 
 //MAIN ==============================================================================================================
 int main(){
@@ -156,7 +257,7 @@ int main(){
 
 	bool ON=true;
 	int pos;
-	char selecao, teste;
+	char selecao;
 	
 
 	//PARTE 1: PROGRAMA
@@ -186,10 +287,12 @@ int main(){
 			SetColor(CINZA); cout << "Opcao selecionada: ";
 			SetColor(VERDE); cout << "Calcular o determinante"; SetColor(BRANCO);
 
-			insereMatriz();
+			insereMatriz(); //Leitura da matriz
+
 			SetColor(VERDE); cout << endl << endl << endl << "-> ";
 			SetColor(BRANCO); cout << "O determinante eh: ";
-			SetColor(VERDE); cout << "det(M)=" << Determinante(n, M);
+
+			SetColor(VERDE); cout << "det(M)=" << Determinante(n, M); //Calculo do determinante
 
 			if(voltaMenu()==1){
 				selecao='a';
@@ -198,9 +301,12 @@ int main(){
 		}
 
 		while(pos==2){ //2.2 - Sistema Triangular Inferior
-			limpaTela();
-			SetColor(BRANCO); cout << "Opcao selecionada: ";
-			SetColor(AZUL); cout << "Resolver sistema triangular inferior"; SetColor(BRANCO);
+			limpaTela(); cursor(true);
+			SetColor(CINZA); cout << "-> ";
+			SetColor(CINZA); cout << "Opcao selecionada: ";
+			SetColor(VERDE); cout << "Resolver sistema triangular inferior"; SetColor(BRANCO);
+
+			insereMatriz();
 
 			if(voltaMenu()==1){
 				selecao='a';
@@ -209,9 +315,10 @@ int main(){
 		}
 
 		while(pos==3){ //2.3 - Sistema Triangular Superior
-			limpaTela();
-			SetColor(BRANCO); cout << "Opcao selecionada: ";
-			SetColor(AZUL); cout << "Resolver sistema triangular superior"; SetColor(BRANCO);
+			limpaTela(); cursor(true);
+			SetColor(CINZA); cout << "-> ";
+			SetColor(CINZA); cout << "Opcao selecionada: ";
+			SetColor(VERDE); cout << "Resolver sistema triangular superior"; SetColor(BRANCO);
 
 			if(voltaMenu()==1){
 				selecao='a';
@@ -220,9 +327,10 @@ int main(){
 		}
 
 		while(pos==4){ //2.4 - Decomposição LU
-			limpaTela();
-			SetColor(BRANCO); cout << "Opcao selecionada: ";
-			SetColor(AZUL); cout << "Resolver por Decomposicao LU"; SetColor(BRANCO);
+			limpaTela(); cursor(true);
+			SetColor(CINZA); cout << "-> ";
+			SetColor(CINZA); cout << "Opcao selecionada: ";
+			SetColor(VERDE); cout << "Resolver por Decomposicao LU"; SetColor(BRANCO);
 
 			if(voltaMenu()==1){
 				selecao='a';
@@ -230,10 +338,42 @@ int main(){
 			}
 		}
 
-		while(pos==5){ //2.5 - Cholensky
-			limpaTela();
-			SetColor(BRANCO); cout << "Opcao selecionada: ";
-			SetColor(AZUL); cout << "Resolver por Cholensky"; SetColor(BRANCO);
+		while(pos==5){ //2.5 - Cholesky
+			limpaTela(); cursor(true);
+			SetColor(CINZA); cout << "-> ";
+			SetColor(CINZA); cout << "Opcao selecionada: ";
+			SetColor(VERDE); cout << "Resolver por Cholesky"; SetColor(BRANCO);
+
+			insereMatriz(); //Inserção da matriz
+
+			int flag=1; //Teste de convergência
+			if(simetrica()==false) flag=-1;
+			for(int ordem=1; ordem<=n; ordem++) if(Determinante(ordem, M)<=0) flag=0;
+
+			if(flag<1){
+				SetColor(VERMELHO); cout << endl << endl << "A matriz inserida nao converge -> ";
+				SetColor(BRANCO);
+				if(flag==-1) cout << "ela nao eh simetrica.";
+				else cout << "ela nao eh positiva.";
+			}
+
+			else{ //Converge :)
+				SetColor(BRANCO); cout << endl << "Insira o vetor B: " << endl; SetColor(AZUL);
+				for(int i=0; i<n; i++) cin >> B[i];
+
+				SetColor(CINZA); cout << endl; for(int loop=0; loop<80; loop++) cout << "=";
+				Cholesky(n, M, B, X);
+				SetColor(VERDE); cout << endl << endl << "Vetor X (solucao):" << endl; SetColor(VERDE);
+				cout << "X=(";
+				for(int i=0; i<n; i++){
+					if(X[i]>=0.001 || X[i]<=-0.001) cout << fixed << setprecision(3) << X[i];
+					else cout << 0;
+
+					if(i!=n-1) cout << "  ";
+				}
+				cout << ")";
+			}
+
 
 			if(voltaMenu()==1){
 				selecao='a';
@@ -242,9 +382,10 @@ int main(){
 		}
 
 		while(pos==6){ //2.6 - Gauss Compacto
-			limpaTela();
-			SetColor(BRANCO); cout << "Opcao selecionada: ";
-			SetColor(AZUL); cout << "Resolver por Gauss Compacto"; SetColor(BRANCO);
+			limpaTela(); cursor(true);
+			SetColor(CINZA); cout << "-> ";
+			SetColor(CINZA); cout << "Opcao selecionada: ";
+			SetColor(VERDE); cout << "Resolver por Gauss Compacto"; SetColor(BRANCO);
 
 			if(voltaMenu()==1){
 				selecao='a';
@@ -253,9 +394,10 @@ int main(){
 		}
 
 		while(pos==7){ //2.7 - Gauss-Jordan
-			limpaTela();
-			SetColor(BRANCO); cout << "Opcao selecionada: ";
-			SetColor(AZUL); cout << "Resolver por Gauss-Jordan"; SetColor(BRANCO);
+			limpaTela(); cursor(true);
+			SetColor(CINZA); cout << "-> ";
+			SetColor(CINZA); cout << "Opcao selecionada: ";
+			SetColor(VERDE); cout << "Resolver por Gauss-Jordan"; SetColor(BRANCO);
 
 			if(voltaMenu()==1){
 				selecao='a';
@@ -264,9 +406,10 @@ int main(){
 		}
 
 		while(pos==8){ //2.8 - Jacobi
-			limpaTela();
-			SetColor(BRANCO); cout << "Opcao selecionada: ";
-			SetColor(AZUL); cout << "Resolver por Jacobi"; SetColor(BRANCO);
+			limpaTela(); cursor(true);
+			SetColor(CINZA); cout << "-> ";
+			SetColor(CINZA); cout << "Opcao selecionada: ";
+			SetColor(VERDE); cout << "Resolver por Jacobi"; SetColor(BRANCO);
 
 			if(voltaMenu()==1){
 				selecao='a';
@@ -275,9 +418,10 @@ int main(){
 		}
 
 		while(pos==9){ //2.9 - Gauss-Seidel
-			limpaTela();
-			SetColor(BRANCO); cout << "Opcao selecionada: ";
-			SetColor(AZUL); cout << "Resolver por Gauss-Seidel"; SetColor(BRANCO);
+			limpaTela(); cursor(true);
+			SetColor(CINZA); cout << "-> ";
+			SetColor(CINZA); cout << "Opcao selecionada: ";
+			SetColor(VERDE); cout << "Resolver por Gauss-Seidel"; SetColor(BRANCO);
 
 			if(voltaMenu()==1){
 				selecao='a';
@@ -286,9 +430,10 @@ int main(){
 		}
 
 		while(pos==10){ //2.10 - Matriz inversa
-			limpaTela();
-			SetColor(BRANCO); cout << "Opcao selecionada: ";
-			SetColor(AZUL); cout << "Calcular matriz inversa"; SetColor(BRANCO);
+			limpaTela(); cursor(true);
+			SetColor(CINZA); cout << "-> ";
+			SetColor(CINZA); cout << "Opcao selecionada: ";
+			SetColor(VERDE); cout << "Calcular matriz inversa"; SetColor(BRANCO);
 
 			if(voltaMenu()==1){
 				selecao='a';
