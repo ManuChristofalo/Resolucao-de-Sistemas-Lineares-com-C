@@ -248,6 +248,23 @@ void DecomposicaoLU(int n, double M[][MAX], double B[], double X[]){
         MatrizL(i, n, M, L, U);
     }
 
+	SetColor(CINZA); cout << endl << endl << endl << "Matriz L:" << endl; SetColor(BRANCO);
+    for(int i=0; i<n; i++){
+        for(int j=0; j<i+1; j++) cout << fixed << setprecision(3) << L[i][j] << "  ";
+
+        cout << endl;
+    }
+
+	SetColor(CINZA); cout << endl << endl << endl << "Matriz U:" << endl; SetColor(BRANCO);
+    for(int i=0; i<n; i++){
+        for(int j=0; j<n; j++){
+			if(i>j) cout << "       ";
+			else cout << fixed << setprecision(3) << U[i][j] << "  ";
+		}
+
+        cout << endl;
+    }
+
     SistemaLU(n, L, U, B, X);
 }
 
@@ -333,6 +350,38 @@ void Cholesky(int n, double matriz[][MAX], double B[], double X[]){
     }
 
     EquacaoXY(n, Lt, X, Y);
+}
+
+
+//GAUSS COMPACTO ======================================================================================================
+void GaussCompacto(int n, double M[][MAX], double B[], double X[]){
+    double aux;
+
+    for(int k=0; k<n-1; k++){
+        for(int i=k+1; i<n; i++){
+            aux=M[i][k]/M[k][k];
+            B[i]-=aux*B[k];
+
+            for(int j=k; j<n; j++) M[i][j]-=aux*M[k][j];
+        }
+    }
+
+	SetColor(CINZA); cout << endl << endl << endl << "Matriz LU:" << endl; SetColor(BRANCO);
+    for(int i=0; i<n; i++){
+        for(int j=0; j<n+1; j++){
+			if(j==n) cout << fixed << setprecision(3) << B[i] << endl;
+			else cout << fixed << setprecision(3) << M[i][j] << "  ";
+		}
+    }
+
+	X[n-1]=B[n-1]/M[n-1][n-1];
+
+    for(int i=n-2; i>=0; i--){
+        aux=B[i];
+        for(int j=i+1; j<n; j++) aux-=M[i][j]*X[j];
+
+        X[i]=aux/M[i][i];
+    }
 }
 
 
@@ -527,6 +576,25 @@ int main(){
 			SetColor(CINZA); cout << "-> ";
 			SetColor(CINZA); cout << "Opcao selecionada: ";
 			SetColor(VERDE); cout << "Resolver por Gauss Compacto"; SetColor(BRANCO);
+
+			insereMatriz(); //Inserção da matriz
+
+			int flag=0; //Teste de convergência
+			for(int ordem=1; ordem<=n; ordem++) if(Determinante(ordem, M)==0){flag=ordem; break;}
+
+			if(flag!=0){
+				SetColor(VERMELHO); cout << endl << endl << "A matriz inserida nao converge -> ";
+				SetColor(BRANCO); cout << "o determinante para A(" << flag << ") eh igual a zero.";
+			}
+
+			else{ //Converge :)
+				SetColor(BRANCO); cout << endl << "Insira o vetor B: " << endl; SetColor(AZUL);
+				for(int i=0; i<n; i++) cin >> B[i];
+
+				SetColor(CINZA); cout << endl; for(int loop=0; loop<80; loop++) cout << "=";
+				GaussCompacto(n, M, B, X);
+				printaX();
+			}
 
 			if(voltaMenu()==1){
 				selecao='a';
