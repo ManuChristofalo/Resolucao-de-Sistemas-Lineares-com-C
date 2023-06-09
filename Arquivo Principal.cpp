@@ -192,6 +192,28 @@ bool CriterioColunas(){
     return true;
 }
 
+bool CriterioSassenfield(){
+    double beta[MAX];
+    double soma;
+
+    for(int i=0; i<n; i++){
+        soma=0;
+        for(int j=0; j<n; j++){
+            if(j!=i) soma+=fabs(M[i][j]);
+        }
+        beta[i]=soma/fabs(M[i][i]);
+    }
+
+    float maiorBeta=beta[0];
+    for(int i=1; i<n; i++){
+        if(beta[i] > maiorBeta) maiorBeta=beta[i];
+    }
+
+    if(maiorBeta<1) return true;
+    return false;
+}
+
+
 //TRIANGULO INFERIOR E SUPERIOR =======================================================================================
 void TriInferior(int n, double M[][MAX], double B[], double X[]){
 	for(int i=0 ; i<n ; i++){
@@ -468,22 +490,50 @@ void Jacobi(int n, double M[][MAX], double vetorB[], double aproximacao[], doubl
 
 
 //GAUSS SEIDEL ========================================================================================================
+void GaussSeidel(int ordem, double matriz[][MAX], double B[], double aproximacao[], double e, int maxIter, double X[], int* iteracoes){
+    double aprox_atual[MAX], aprox_anterior[MAX];
+    double diferenca;
+    int iteracao;
 
+    for(int i=0; i<ordem; i++) aprox_atual[i]=aproximacao[i];
+
+    for(iteracao=0; iteracao<maxIter; iteracao++){
+        for(int i=0; i<ordem; i++) aprox_anterior[i]=aprox_atual[i];
+
+        for(int i=0; i<ordem; i++){
+            double soma=0;
+            for(int j=0; j<ordem; j++){
+                if(j != i) soma += matriz[i][j] * aprox_atual[j];
+            }
+
+            aprox_atual[i]=(B[i] - soma) / matriz[i][i];
+        }
+
+        diferenca=0;
+        for(int i=0; i<ordem; i++) diferenca += fabs(aprox_atual[i] - aprox_anterior[i]);
+
+        if(diferenca<e) break;
+    }
+
+    for(int i=0; i<ordem; i++) X[i]=aprox_atual[i];
+
+    *iteracoes=iteracao;
+}
 
 //MATRIZ INVERSA =======================================================================================================
-void SistInversaLU(int ordem, double matriz[][MAX], double L[][MAX], double U[][MAX]) {
-    for (int i = 0; i < ordem; i++) {
-        for (int j = 0; j < ordem; j++) {
-            U[i][j] = matriz[i][j];
+void SistInversaLU(int ordem, double matriz[][MAX], double L[][MAX], double U[][MAX]){
+    for(int i=0; i<ordem; i++){
+        for(int j=0; j<ordem; j++){
+            U[i][j]=matriz[i][j];
         }
     }
 
-    for (int k = 0; k < ordem; k++) {
-        L[k][k] = 1.0;
+    for(int k=0; k<ordem; k++){
+        L[k][k]=1.0;
 
-        for (int i = k + 1; i < ordem; i++) {
-            L[i][k] = U[i][k] / U[k][k];
-            for (int j = k; j < ordem; j++) {
+        for(int i=k + 1; i<ordem; i++){
+            L[i][k]=U[i][k] / U[k][k];
+            for(int j=k; j<ordem; j++){
                 U[i][j] -= L[i][k] * U[k][j];
             }
         }
@@ -860,7 +910,7 @@ int main(){
 
 			insereMatriz(); //Inserção da matriz
 
-			if(CriterioColunas==0 && CriterioLinhas==0){ //Teste de convergência
+			if(CriterioColunas()==0 && CriterioLinhas()==0){ //Teste de convergência
 				SetColor(VERMELHO); cout << endl << endl << "A matriz inserida nao converge -> ";
 				SetColor(BRANCO); cout << "ela nao satisfaz nem o Criterio das Linhas nem o Criterio das Colunas";
 			}
@@ -901,9 +951,9 @@ int main(){
 
 			insereMatriz(); //Inserção da matriz
 
-			if(CriterioColunas==0 && CriterioLinhas==0){ //Teste de convergência
+			if(CriterioLinhas()==0 && CriterioSassenfield()==0){ //Teste de convergência
 				SetColor(VERMELHO); cout << endl << endl << "A matriz inserida nao converge -> ";
-				SetColor(BRANCO); cout << "ela nao satisfaz nem o Criterio das Linhas nem o Criterio das Colunas";
+				SetColor(BRANCO); cout << "ela nao satisfaz nem o Criterio das Linhas nem o Criterio de Sassenfield";
 			}
 
 			else{ //Converge :)
@@ -923,7 +973,7 @@ int main(){
 				cin >> maxIteracoes;
 
 				SetColor(CINZA); cout << endl; for(int loop=0; loop<80; loop++) cout << "=";
-				Jacobi(n, M, B, aprox, e, maxIteracoes, X, &iteracoes);
+				GaussSeidel(n, M, B, aprox, e, maxIteracoes, X, &iteracoes);
 				printaX(); SetColor(VERDE);
 				cout << endl << endl << "Numero de iteracoes realizadas: " << iteracoes;
 			}
