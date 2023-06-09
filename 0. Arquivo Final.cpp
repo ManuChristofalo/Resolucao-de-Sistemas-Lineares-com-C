@@ -170,6 +170,28 @@ void printaX(){
 	cout << ")";
 }
 
+bool CriterioLinhas(){
+	for(int i=0; i<n; i++){
+        double soma=0;
+        for(int j=0; j<n; j++){
+            if(j!=i) soma+=M[i][j];
+        }
+        if(M[i][i]<=soma) return false;
+    }
+    return true;
+}
+
+bool CriterioColunas(){
+	for(int j=0; j<n; j++){
+        double soma=0;
+        for(int i=0; i<n; i++){
+            if(i!=j) soma+=M[i][j];
+        }
+        if(M[j][j]<=soma) return false;
+    }
+    return true;
+}
+
 //TRIANGULO INFERIOR E SUPERIOR =======================================================================================
 void TriInferior(int n, double M[][MAX], double B[], double X[]){
 	for(int i=0 ; i<n ; i++){
@@ -197,7 +219,7 @@ void TriSuperior(int n, double M[][MAX], double B[], double X[]){
 //DECOMPOSIÇÃO LU =====================================================================================================	
 void MatrizU(int i, int n, double M[][MAX], double L[][MAX], double U[][MAX]){
     for(int j=0; j<n; j++){
-        if(i==0) U[i][j] = M[i][j];
+        if(i==0) U[i][j]=M[i][j];
 
         else{
 			double soma=0;
@@ -207,7 +229,7 @@ void MatrizU(int i, int n, double M[][MAX], double L[][MAX], double U[][MAX]){
     }
 }
 
-void MatrizL(int j, int n, double M[][MAX], double L[][MAX], double U[][MAX]) {
+void MatrizL(int j, int n, double M[][MAX], double L[][MAX], double U[][MAX]){
     for(int i=0; i<n; i++){
         if(j==0) L[i][j]=M[i][j]/U[j][j];
         else{
@@ -218,32 +240,31 @@ void MatrizL(int j, int n, double M[][MAX], double L[][MAX], double U[][MAX]) {
     }
 }
 
-void SistemaLU(int n, double L[][MAX], double U[][MAX], double B[], double X[]) {
-    int i, j, k;
+void SistemaLU(int n, double L[][MAX], double U[][MAX], double B[], double X[]){
+    int i, j;
     double Y[MAX];
 
-    //Ly = B
-    Y[0] = B[0] / L[0][0];
-    for (i = 1; i < n; i++) {
-        double soma = 0;
-        for (j = 0; j < i; j++) soma += L[i][j] * Y[j];
-        Y[i] = (B[i] - soma) / L[i][i];
+    //Ly=B
+    Y[0]=B[0] / L[0][0];
+    for(i=1; i<n; i++){
+        double soma=0;
+        for(j=0; j<i; j++) soma += L[i][j] * Y[j];
+        Y[i]=(B[i] - soma) / L[i][i];
     }
 
-    //Ux = y
-    X[n - 1] = Y[n - 1] / U[n - 1][n - 1];
-    for (i = n - 2; i >= 0; i--) {
-        double soma = 0;
-        for (j = i + 1; j < n; j++) soma += U[i][j] * X[j];
-        X[i] = (Y[i] - soma) / U[i][i];
+    //Ux=y
+    X[n - 1]=Y[n - 1] / U[n - 1][n - 1];
+    for(i=n - 2; i >= 0; i--){
+        double soma=0;
+        for(j=i + 1; j<n; j++) soma += U[i][j] * X[j];
+        X[i]=(Y[i] - soma) / U[i][i];
     }
 }
 
 void DecomposicaoLU(int n, double M[][MAX], double B[], double X[]){
-    int i, j;
     double U[MAX][MAX], L[MAX][MAX];
 
-    for(i = 0; i < n; i++){
+    for(int i=0; i<n; i++){
         MatrizU(i, n, M, L, U);
         MatrizL(i, n, M, L, U);
     }
@@ -336,8 +357,8 @@ void Cholesky(int n, double matriz[][MAX], double B[], double X[]){
 
 
     double Lt[10][10];
-    for (int i=0; i<n; i++) {
-        for (int j=0; j<n; j++) {
+    for(int i=0; i<n; i++){
+        for(int j=0; j<n; j++){
             Lt[i][j]=L[j][i];
         }
     }
@@ -382,6 +403,67 @@ void GaussCompacto(int n, double M[][MAX], double B[], double X[]){
 
         X[i]=aux/M[i][i];
     }
+}
+
+
+//GAUSS JORDAN ========================================================================================================
+bool GaussJordan(int n, double M[][MAX], double B[MAX], double X[MAX]){
+    double matrizAumentada[MAX][MAX+1];
+
+    for(int i=0; i<n; i++){
+        for(int j=0; j<n+1; j++){
+            if(j==n) matrizAumentada[i][j]=B[i];
+            else matrizAumentada[i][j]=M[i][j];
+        }
+    }
+
+    for(int i=0; i<n; i++){
+        double pivo=matrizAumentada[i][i];
+
+        if(pivo==0) return 0; //Sistema indeterminado
+		else{
+            for(int j=i; j<=n; j++) matrizAumentada[i][j]/=pivo;
+
+            for(int k=0; k<n; k++){
+                if(k!=i){
+                    double fator=matrizAumentada[k][i];
+                    for(int j=i; j<=n; j++) matrizAumentada[k][j]-=fator*matrizAumentada[i][j];
+                }
+            }
+        }
+    }
+
+    for(int i=0; i<n; i++) X[i]=matrizAumentada[i][n];
+	return 1;
+}
+
+
+//JACOBI ==============================================================================================================
+void Jacobi(int n, double M[][MAX], double vetorB[], double aproximacao[], double e, int maxIter, double X[], int* iteracoes){
+    double temp[MAX];
+    int i, j, iter;
+
+    for(iter=1; iter<=maxIter; iter++){
+        double erro=0.0;
+
+        for(i=0; i<n; i++){
+            temp[i]=vetorB[i];
+            for(j=0; j<n; j++){
+                if(i!=j) temp[i]-=M[i][j]*aproximacao[j];
+            }
+            temp[i]/=M[i][i];
+        }
+
+        for(i=0; i<n; i++) erro+=(temp[i]-aproximacao[i]) * (temp[i] - aproximacao[i]);
+
+        for(i=0; i<n; i++) aproximacao[i]=temp[i];
+
+        if(erro<e) break;
+    }
+
+    for(i=0; i<n; i++) X[i]=aproximacao[i];
+
+    *iteracoes=iter;
 }
 
 
@@ -608,6 +690,27 @@ int main(){
 			SetColor(CINZA); cout << "Opcao selecionada: ";
 			SetColor(VERDE); cout << "Resolver por Gauss-Jordan"; SetColor(BRANCO);
 
+			insereMatriz(); //Inserção da matriz
+
+			int flag=0; //Teste de convergência
+			for(int ordem=1; ordem<=n; ordem++) if(Determinante(ordem, M)==0){flag=ordem; break;}
+
+			if(flag!=0){
+				SetColor(VERMELHO); cout << endl << endl << "A matriz inserida nao converge -> ";
+				SetColor(BRANCO); cout << "o determinante para A(" << flag << ") eh igual a zero.";
+			}
+
+			else{ //Converge :)
+				SetColor(BRANCO); cout << endl << "Insira o vetor B: " << endl; SetColor(AZUL);
+				for(int i=0; i<n; i++) cin >> B[i];
+
+				SetColor(CINZA); cout << endl; for(int loop=0; loop<80; loop++) cout << "=";
+				if(GaussJordan(n, M, B, X)==0){
+					SetColor(VERMELHO); cout << endl << endl << "O sistema gerado eh inderminado." << endl;
+				}
+				else printaX();
+			}
+
 			if(voltaMenu()==1){
 				selecao='a';
 				break;
@@ -619,6 +722,35 @@ int main(){
 			SetColor(CINZA); cout << "-> ";
 			SetColor(CINZA); cout << "Opcao selecionada: ";
 			SetColor(VERDE); cout << "Resolver por Jacobi"; SetColor(BRANCO);
+
+			insereMatriz(); //Inserção da matriz
+
+			if(CriterioColunas==0 && CriterioLinhas==0){ //Teste de convergência
+				SetColor(VERMELHO); cout << endl << endl << "A matriz inserida nao converge -> ";
+				SetColor(BRANCO); cout << "ela nao satisfaz nem o Criterio das Linhas nem o Criterio das Colunas";
+			}
+
+			else{ //Converge :)
+				int iteracoes=0, maxIteracoes;
+				double aprox[MAX], e;
+
+				SetColor(BRANCO); cout << endl << "Insira o vetor B: " << endl; SetColor(AZUL);
+				for(int i=0; i<n; i++) cin >> B[i];
+
+				SetColor(BRANCO); cout << endl << "Insira o vetor de aproximacao: " << endl; SetColor(AZUL);
+				for(int i=0; i<n; i++) cin >> aprox[i];
+
+				SetColor(BRANCO); cout << endl << "Insira a precisao desejada (e): " << endl; SetColor(AZUL);
+				cin >> e;
+
+				SetColor(BRANCO); cout << endl << "Insira o numero maximo de iteracoes: " << endl; SetColor(AZUL);
+				cin >> maxIteracoes;
+
+				SetColor(CINZA); cout << endl; for(int loop=0; loop<80; loop++) cout << "=";
+				Jacobi(n, M, B, aprox, e, maxIteracoes, X, &iteracoes);
+				printaX(); SetColor(VERDE);
+				cout << endl << endl << "Numero de iteracoes realizadas: " << iteracoes;
+			}
 
 			if(voltaMenu()==1){
 				selecao='a';
