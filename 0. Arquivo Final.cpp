@@ -104,13 +104,13 @@ bool voltaMenu(){ //Opção tentar ou voltar
 //FUNÇÕES BASE ========================================================================================================
 void insereMatriz(){ //Inserção da matriz para cada opção
 	n=11; 
-	SetColor(BRANCO); cout << endl << endl << endl << "Digite a ordem da sua matriz(max. " << MAX << "): ";
+	SetColor(BRANCO); cout << endl << endl << endl << "Digite a ordem da sua matriz (max. " << MAX << "): ";
 	while(n>10 || n<1){
 		gotoxy(40, 3); cout << "          "; gotoxy(40, 3);
 		SetColor(AZUL); cin >> n;
 	}
 
-	SetColor(BRANCO); cout << endl << "Insira a sua matriz(" << n << "x" << n << "):" << endl; SetColor(AZUL);
+	SetColor(BRANCO); cout << endl << "Insira a sua matriz (" << n << "x" << n << "):" << endl; SetColor(AZUL);
 	for(int i=0; i<n; i++){
 		for(int j=0; j<n; j++){
 			cin >> M[i][j];
@@ -159,7 +159,7 @@ bool simetrica(){
 }
 
 void printaX(){
-	SetColor(VERDE); cout << endl << endl << "Vetor X(solucao):" << endl; SetColor(VERDE);
+	SetColor(VERDE); cout << endl << endl << "Vetor X (solucao):" << endl; SetColor(VERDE);
 	cout << "X=(";
 	for(int i=0; i<n; i++){
 		if(X[i]>=0.001 || X[i]<=-0.001) cout << fixed << setprecision(3) << X[i];
@@ -524,6 +524,23 @@ void InversaLU(int ordem, double matriz[][MAX], double inversa[][MAX]){
             inversa[i][k]=(y[i]-soma)/U[i][i];
         }
     }
+
+	SetColor(CINZA); cout << endl << endl << endl << "Matriz L:" << endl; SetColor(BRANCO);
+    for(int i=0; i<n; i++){
+        for(int j=0; j<i+1; j++) cout << fixed << setprecision(3) << L[i][j] << "  ";
+
+        cout << endl;
+    }
+
+	SetColor(CINZA); cout << endl << endl << endl << "Matriz U:" << endl; SetColor(BRANCO);
+    for(int i=0; i<n; i++){
+        for(int j=0; j<n; j++){
+			if(i>j) cout << "       ";
+			else cout << fixed << setprecision(3) << U[i][j] << "  ";
+		}
+
+        cout << endl;
+    }
 }
 
 void InversaGauss(int ordem, double matriz[][MAX], double inversa[][MAX]){
@@ -534,6 +551,12 @@ void InversaGauss(int ordem, double matriz[][MAX], double inversa[][MAX]){
             matriz_aumentada[i][j]=matriz[i][j];
             matriz_aumentada[i][j+ordem]=(i==j) ? 1.0 : 0.0;
         }
+    }
+
+	SetColor(CINZA); cout << endl << endl << endl << "Matriz aumentada:" << endl; SetColor(BRANCO);
+    for(int i=0; i<n; i++){
+        for(int j=0; j<n*2; j++) cout << fixed << setprecision(3) << matriz_aumentada[i][j] << "  ";
+		cout << endl;
     }
 
     //Gauss compacto:
