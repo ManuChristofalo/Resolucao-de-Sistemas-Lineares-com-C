@@ -30,7 +30,7 @@ using namespace std;
 #define MAX 10
 
 int n;
-double M[MAX][MAX], B[MAX], X[MAX];
+double M[MAX][MAX], B[MAX], X[MAX], inversa[MAX][MAX];
 
 //FORMATAÇÃO ==========================================================================================================
 void gotoxy(int x, int y){ //Posição do cursor
@@ -48,8 +48,8 @@ void cursor(bool val){ //Esconde o cursor
 
 int SetColor(char color){ //Cor
 	HANDLE h;
-	h=GetStdHandle (STD_OUTPUT_HANDLE);
-	return SetConsoleTextAttribute (h,color);
+	h=GetStdHandle(STD_OUTPUT_HANDLE);
+	return SetConsoleTextAttribute(h,color);
 }
 
 void limpaTela(){ //Limpa a tela
@@ -104,13 +104,13 @@ bool voltaMenu(){ //Opção tentar ou voltar
 //FUNÇÕES BASE ========================================================================================================
 void insereMatriz(){ //Inserção da matriz para cada opção
 	n=11; 
-	SetColor(BRANCO); cout << endl << endl << endl << "Digite a ordem da sua matriz (max. " << MAX << "): ";
+	SetColor(BRANCO); cout << endl << endl << endl << "Digite a ordem da sua matriz(max. " << MAX << "): ";
 	while(n>10 || n<1){
 		gotoxy(40, 3); cout << "          "; gotoxy(40, 3);
 		SetColor(AZUL); cin >> n;
 	}
 
-	SetColor(BRANCO); cout << endl << "Insira a sua matriz (" << n << "x" << n << "):" << endl; SetColor(AZUL);
+	SetColor(BRANCO); cout << endl << "Insira a sua matriz(" << n << "x" << n << "):" << endl; SetColor(AZUL);
 	for(int i=0; i<n; i++){
 		for(int j=0; j<n; j++){
 			cin >> M[i][j];
@@ -159,7 +159,7 @@ bool simetrica(){
 }
 
 void printaX(){
-	SetColor(VERDE); cout << endl << endl << "Vetor X (solucao):" << endl; SetColor(VERDE);
+	SetColor(VERDE); cout << endl << endl << "Vetor X(solucao):" << endl; SetColor(VERDE);
 	cout << "X=(";
 	for(int i=0; i<n; i++){
 		if(X[i]>=0.001 || X[i]<=-0.001) cout << fixed << setprecision(3) << X[i];
@@ -454,7 +454,7 @@ void Jacobi(int n, double M[][MAX], double vetorB[], double aproximacao[], doubl
             temp[i]/=M[i][i];
         }
 
-        for(i=0; i<n; i++) erro+=(temp[i]-aproximacao[i]) * (temp[i] - aproximacao[i]);
+        for(i=0; i<n; i++) erro+=(temp[i]-aproximacao[i]) *(temp[i] - aproximacao[i]);
 
         for(i=0; i<n; i++) aproximacao[i]=temp[i];
 
@@ -466,6 +466,118 @@ void Jacobi(int n, double M[][MAX], double vetorB[], double aproximacao[], doubl
     *iteracoes=iter;
 }
 
+
+//GAUSS SEIDEL ========================================================================================================
+
+
+//MATRIZ INVERSA =======================================================================================================
+void SistInversaLU(int ordem, double matriz[][MAX], double L[][MAX], double U[][MAX]) {
+    for (int i = 0; i < ordem; i++) {
+        for (int j = 0; j < ordem; j++) {
+            U[i][j] = matriz[i][j];
+        }
+    }
+
+    for (int k = 0; k < ordem; k++) {
+        L[k][k] = 1.0;
+
+        for (int i = k + 1; i < ordem; i++) {
+            L[i][k] = U[i][k] / U[k][k];
+            for (int j = k; j < ordem; j++) {
+                U[i][j] -= L[i][k] * U[k][j];
+            }
+        }
+    }
+}
+
+void InversaLU(int ordem, double matriz[][MAX], double inversa[][MAX]){
+    double L[MAX][MAX];
+    double U[MAX][MAX];
+    double identidade[MAX][MAX];
+
+    //Inicialização da identidade
+    for(int i=0; i<ordem; i++){
+        for(int j=0; j<ordem; j++){
+            if(i==j) identidade[i][j]=1;
+        	else identidade[i][j]=0;
+        }
+    }
+
+    SistInversaLU(ordem, matriz, L, U);
+
+    //Ssistema Ly=I
+    for(int k=0; k<ordem; k++){
+        double y[MAX];
+
+        for(int i=0; i<ordem; i++){
+            double soma=0;
+            for(int j=0; j<i; j++) soma+=L[i][j]*y[j];
+
+            y[i]=(identidade[i][k]-soma)/L[i][i];
+        }
+
+        //Sistema Ux=y
+        for(int i=ordem-1; i>=0; i--){
+            double soma=0;
+            for(int j=i+1; j<ordem; j++) soma+=U[i][j]*inversa[j][k];
+            
+            inversa[i][k]=(y[i]-soma)/U[i][i];
+        }
+    }
+}
+
+void InversaGauss(int ordem, double matriz[][MAX], double inversa[][MAX]){
+    double matriz_aumentada[MAX][2*MAX];
+    
+    for(int i=0; i<ordem; i++){
+        for(int j=0; j<ordem; j++){
+            matriz_aumentada[i][j]=matriz[i][j];
+            matriz_aumentada[i][j+ordem]=(i==j) ? 1.0 : 0.0;
+        }
+    }
+
+    //Gauss compacto:
+    for(int i=0; i<ordem; i++){
+        double pivo=matriz_aumentada[i][i];
+
+        if(pivo==0){
+            int troca=0;
+
+            for(int j=i+1; j<ordem; j++){
+                if(matriz_aumentada[j][i]!=0){
+                    troca=1;
+                    for(int k=0; k<2 * ordem; k++){
+                        double aux=matriz_aumentada[i][k];
+                        matriz_aumentada[i][k]=matriz_aumentada[j][k];
+                        matriz_aumentada[j][k]=aux;
+                    }
+                    break;
+                }
+            }
+
+            if(troca==0){
+                SetColor(VERMELHO);
+				cout << "A matriz nao eh invertivel";
+                return;
+            }
+
+            pivo=matriz_aumentada[i][i];
+        }
+
+        for(int j=0; j<2 * ordem; j++) matriz_aumentada[i][j] /= pivo;
+
+        for(int k=0; k<ordem; k++){
+            if(k!=i){
+                double fator=matriz_aumentada[k][i];
+                for(int j=0; j<2 * ordem; j++) matriz_aumentada[k][j] -= fator * matriz_aumentada[i][j];
+            }
+        }
+    }
+
+    for(int i=0; i<ordem; i++){
+        for(int j=0; j<ordem; j++) inversa[i][j]=matriz_aumentada[i][j+ordem];
+    }
+}
 
 //MAIN ================================================================================================================
 int main(){
@@ -666,7 +778,7 @@ int main(){
 
 			if(flag!=0){
 				SetColor(VERMELHO); cout << endl << endl << "A matriz inserida nao converge -> ";
-				SetColor(BRANCO); cout << "o determinante para A(" << flag << ") eh igual a zero.";
+				SetColor(BRANCO); cout << "o determinante para A (" << flag << ") eh igual a zero.";
 			}
 
 			else{ //Converge :)
@@ -697,7 +809,7 @@ int main(){
 
 			if(flag!=0){
 				SetColor(VERMELHO); cout << endl << endl << "A matriz inserida nao converge -> ";
-				SetColor(BRANCO); cout << "o determinante para A(" << flag << ") eh igual a zero.";
+				SetColor(BRANCO); cout << "o determinante para A (" << flag << ") eh igual a zero.";
 			}
 
 			else{ //Converge :)
@@ -764,6 +876,35 @@ int main(){
 			SetColor(CINZA); cout << "Opcao selecionada: ";
 			SetColor(VERDE); cout << "Resolver por Gauss-Seidel"; SetColor(BRANCO);
 
+			insereMatriz(); //Inserção da matriz
+
+			if(CriterioColunas==0 && CriterioLinhas==0){ //Teste de convergência
+				SetColor(VERMELHO); cout << endl << endl << "A matriz inserida nao converge -> ";
+				SetColor(BRANCO); cout << "ela nao satisfaz nem o Criterio das Linhas nem o Criterio das Colunas";
+			}
+
+			else{ //Converge :)
+				int iteracoes=0, maxIteracoes;
+				double aprox[MAX], e;
+
+				SetColor(BRANCO); cout << endl << "Insira o vetor B: " << endl; SetColor(AZUL);
+				for(int i=0; i<n; i++) cin >> B[i];
+
+				SetColor(BRANCO); cout << endl << "Insira o vetor de aproximacao: " << endl; SetColor(AZUL);
+				for(int i=0; i<n; i++) cin >> aprox[i];
+
+				SetColor(BRANCO); cout << endl << "Insira a precisao desejada (e): " << endl; SetColor(AZUL);
+				cin >> e;
+
+				SetColor(BRANCO); cout << endl << "Insira o numero maximo de iteracoes: " << endl; SetColor(AZUL);
+				cin >> maxIteracoes;
+
+				SetColor(CINZA); cout << endl; for(int loop=0; loop<80; loop++) cout << "=";
+				Jacobi(n, M, B, aprox, e, maxIteracoes, X, &iteracoes);
+				printaX(); SetColor(VERDE);
+				cout << endl << endl << "Numero de iteracoes realizadas: " << iteracoes;
+			}
+
 			if(voltaMenu()==1){
 				selecao='a';
 				break;
@@ -776,6 +917,27 @@ int main(){
 			SetColor(CINZA); cout << "Opcao selecionada: ";
 			SetColor(VERDE); cout << "Calcular matriz inversa por Decomposicao LU"; SetColor(BRANCO);
 
+			insereMatriz(); //Inserção da matriz
+
+			int flag=0; //Teste de convergência
+			for(int ordem=1; ordem<=n; ordem++) if(Determinante(ordem, M)==0){flag=ordem; break;}
+
+			if(flag!=0){
+				SetColor(VERMELHO); cout << endl << endl << "A matriz inserida nao converge -> ";
+				SetColor(BRANCO); cout << "o determinante para A(" << flag << ") eh igual a zero.";
+			}
+
+			else{ //Converge :)
+				SetColor(CINZA); cout << endl; for(int loop=0; loop<80; loop++) cout << "=";
+				InversaLU(n, M, inversa);
+				SetColor(VERDE);
+				cout << endl << endl << "Matriz inversa:" << endl;
+				for(int i=0; i<n; i++){
+					for(int j=0; j<n; j++) cout << inversa[i][j] << "  ";
+					cout << endl;
+				}
+			}
+
 			if(voltaMenu()==1){
 				selecao='a';
 				break;
@@ -787,6 +949,27 @@ int main(){
 			SetColor(CINZA); cout << "-> ";
 			SetColor(CINZA); cout << "Opcao selecionada: ";
 			SetColor(VERDE); cout << "Calcular matriz inversa por Gauss Compacto"; SetColor(BRANCO);
+
+			insereMatriz(); //Inserção da matriz
+
+			int flag=0; //Teste de convergência
+			for(int ordem=1; ordem<=n; ordem++) if(Determinante(ordem, M)==0){flag=ordem; break;}
+
+			if(flag!=0){
+				SetColor(VERMELHO); cout << endl << endl << "A matriz inserida nao converge -> ";
+				SetColor(BRANCO); cout << "o determinante para A (" << flag << ") eh igual a zero.";
+			}
+
+			else{ //Converge :)
+				SetColor(CINZA); cout << endl; for(int loop=0; loop<80; loop++) cout << "=";
+				InversaGauss(n, M, inversa);
+				SetColor(VERDE);
+				cout << endl << endl << "Matriz inversa:" << endl;
+				for(int i=0; i<n; i++){
+					for(int j=0; j<n; j++) cout << inversa[i][j] << "  ";
+					cout << endl;
+				}
+			}
 
 			if(voltaMenu()==1){
 				selecao='a';
