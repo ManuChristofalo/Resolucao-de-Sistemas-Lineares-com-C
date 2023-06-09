@@ -195,53 +195,30 @@ void TriSuperior(int n, double M[][MAX], double B[], double X[]){
 
 
 //DECOMPOSIÇÃO LU =====================================================================================================	
-double somatorioU(int i, int j, double M[][MAX], double L[][MAX], double U[][MAX]) {
-    double cont = 0;
-    int k;
-    for (k = 0; k < i; k++) {
-        cont += L[i][k] * U[k][j];
-    }
+void MatrizU(int i, int n, double M[][MAX], double L[][MAX], double U[][MAX]){
+    for(int j=0; j<n; j++){
+        if(i==0) U[i][j] = M[i][j];
 
-    return cont;
-}
-
-void MU(int i, int n, double M[][MAX], double L[][MAX], double U[][MAX]) {
-    int j;
-    for (j = 0; j < n; j++) {
-        if (i == 0) {
-            U[i][j] = M[i][j];
-			printf("\nMatriz U[%d][%d] = %.2lf\n", i, j, U[i][j]);
-        } else {
-            U[i][j] = M[i][j] - somatorioU(i, j, M, L, U);
-			printf("\nMatriz U[%d][%d] = %.2lf\n", i, j, U[i][j]);
+        else{
+			double soma=0;
+			for(int k=0; k<i; k++) soma+=L[i][k]*U[k][j];
+            U[i][j]=M[i][j]-soma;
         }
     }
 }
 
-double somatorioL(int i, int j, double M[][MAX], double L[][MAX], double U[][MAX]) {
-    double cont = 0;
-    int k;
-    for (k = 0; k < j; k++) {
-        cont += L[i][k] * U[k][j];
-    }
-
-    return cont;
-}
-
-void ML(int j, int n, double M[][MAX], double L[][MAX], double U[][MAX]) {
-    int i;
-    for (i = 0; i < n; i++) {
-        if (j == 0) {
-            L[i][j] = M[i][j] / U[j][j];
-			printf("\nMatriz L[%d][%d] = %.2lf\n", i, j, L[i][j]);
-        } else {
-            L[i][j] = (M[i][j] - somatorioL(i, j, M, L, U)) / U[j][j];
-			printf("\nMatriz L[%d][%d] = %.2lf\n", i, j, L[i][j]);
+void MatrizL(int j, int n, double M[][MAX], double L[][MAX], double U[][MAX]) {
+    for(int i=0; i<n; i++){
+        if(j==0) L[i][j]=M[i][j]/U[j][j];
+        else{
+			double soma=0;
+			for(int k=0; k<j; k++) soma+=L[i][k]*U[k][j];
+            L[i][j]=(M[i][j]-soma)/U[j][j];
         }
     }
 }
 
-void resolverSistema(int n, double L[][MAX], double U[][MAX], double B[], double X[]) {
+void SistemaLU(int n, double L[][MAX], double U[][MAX], double B[], double X[]) {
     int i, j, k;
     double Y[MAX];
 
@@ -249,9 +226,7 @@ void resolverSistema(int n, double L[][MAX], double U[][MAX], double B[], double
     Y[0] = B[0] / L[0][0];
     for (i = 1; i < n; i++) {
         double soma = 0;
-        for (j = 0; j < i; j++) {
-            soma += L[i][j] * Y[j];
-        }
+        for (j = 0; j < i; j++) soma += L[i][j] * Y[j];
         Y[i] = (B[i] - soma) / L[i][i];
     }
 
@@ -259,45 +234,33 @@ void resolverSistema(int n, double L[][MAX], double U[][MAX], double B[], double
     X[n - 1] = Y[n - 1] / U[n - 1][n - 1];
     for (i = n - 2; i >= 0; i--) {
         double soma = 0;
-        for (j = i + 1; j < n; j++) {
-            soma += U[i][j] * X[j];
-        }
+        for (j = i + 1; j < n; j++) soma += U[i][j] * X[j];
         X[i] = (Y[i] - soma) / U[i][i];
     }
 }
 
-void MLU(int n, double M[][MAX], double B[], double X[]){
+void DecomposicaoLU(int n, double M[][MAX], double B[], double X[]){
     int i, j;
     double U[MAX][MAX], L[MAX][MAX];
 
-    for (i = 0; i < n; i++) {
-        MU(i, n, M, L, U);
-        ML(i, n, M, L, U);
+    for(i = 0; i < n; i++){
+        MatrizU(i, n, M, L, U);
+        MatrizL(i, n, M, L, U);
     }
 
-    resolverSistema(n, L, U, B, X);
+    SistemaLU(n, L, U, B, X);
 }
 
 
 //CHOLENSKY ===========================================================================================================
-double somatorioPrincipal(int i, double L[][MAX]){
-    double soma=0;
-    for(int k=0; k<i; k++) soma+=pow(L[i][k], 2);
-
-    return soma;
-}
-
 void DiagPrincipal(int i, double matriz[][MAX], double L[][MAX]){
     if(i==0) L[0][0]=sqrt(matriz[0][0]);
 	
-	else L[i][i]=sqrt(matriz[i][i] - somatorioPrincipal(i, L));
-}
-
-double somatorioPadrao(int i, int j, double L[][MAX]){
-    double soma=0;
-    for(int k=0; k<j; k++) soma+=L[i][k]*L[j][k];
-    
-    return soma;
+	else{
+		double soma=0;
+		for(int k=0; k<i; k++) soma+=pow(L[i][k], 2);
+		L[i][i]=sqrt(matriz[i][i]-soma);
+	}
 }
 
 void OutrosElem(int i, int j, double matriz[][MAX], double L[][MAX]){
@@ -306,7 +269,11 @@ void OutrosElem(int i, int j, double matriz[][MAX], double L[][MAX]){
         L[j][i]=L[i][j];
     }
 	
-	else L[i][j]=(matriz[i][j] - somatorioPadrao(i, j, L)) / L[j][j];
+	else{
+		double soma=0;
+		for(int k=0; k<j; k++) soma+=L[i][k]*L[j][k];
+		L[i][j]=(matriz[i][j]-soma)/L[j][j];
+	}
 }
 
 void EquacaoLY(int n, double L[][MAX], double Y[], double B[]){
@@ -391,7 +358,7 @@ int main(){
 			cursor(false);
 			menuSelecao(pos);
 
-			if(pos==11) SetColor(VERMELHO);
+			if(pos==12) SetColor(VERMELHO);
 			else SetColor(AZUL);
 
 			gotoxy(0, 3+pos); cout << ">";
@@ -498,7 +465,7 @@ int main(){
 			insereMatriz(); //Inserção da matriz
 
 			int flag=0; //Teste de convergência
-			for(int ordem=1; ordem<=n; ordem++) if(Determinante(ordem, M)<=0){flag=ordem; break;}
+			for(int ordem=1; ordem<=n; ordem++) if(Determinante(ordem, M)==0){flag=ordem; break;}
 
 			if(flag!=0){
 				SetColor(VERMELHO); cout << endl << endl << "A matriz inserida nao converge -> ";
@@ -510,7 +477,7 @@ int main(){
 				for(int i=0; i<n; i++) cin >> B[i];
 
 				SetColor(CINZA); cout << endl; for(int loop=0; loop<80; loop++) cout << "=";
-				Cholesky(n, M, B, X);
+				DecomposicaoLU(n, M, B, X);
 				printaX();
 			}
 
