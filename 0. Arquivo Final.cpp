@@ -397,7 +397,7 @@ int main(){
 			gotoxy(0, 3+pos); cout << ">";
 
 			selecao=getch();
-			if(pos!=11) if(selecao==DOWN) pos++;
+			if(pos!=12) if(selecao==DOWN) pos++;
 			if(pos!=1) if(selecao==UP) pos--;
 		}
 			
