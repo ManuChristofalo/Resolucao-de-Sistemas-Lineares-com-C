@@ -231,7 +231,7 @@ void TriSuperior(int n, double M[][MAX], double B[], double X[]){
 		if(i==n-1) X[i]=B[i]/M[i][i];
 		else{
 			double soma=0;
-			for(int j=0; j<n; j++) soma+=M[i][j]*X[j];
+			for(int j=i+1; j<n; j++) soma+=M[i][j]*X[j];
 			X[i]=(B[i]-soma)/M[i][i];
 		}
 	}
